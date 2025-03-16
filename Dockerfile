@@ -1,5 +1,5 @@
-# استخدم صورة PHP مع Apache
-FROM php:8.2-fpm
+# استخدم صورة PHP 8.2 مع Apache
+FROM php:8.2-apache
 
 # تثبيت الإضافات المطلوبة لـ Laravel
 RUN apt-get update && apt-get install -y \
@@ -22,7 +22,7 @@ RUN a2enmod rewrite
 WORKDIR /var/www
 
 # نسخ ملفات Laravel إلى الحاوية مع استثناء الملفات غير الضرورية
-COPY . . 
+COPY . .
 
 # ضبط DocumentRoot إلى مجلد public في Laravel
 RUN sed -i 's|/var/www/html|/var/www/public|g' /etc/apache2/sites-available/000-default.conf
@@ -37,11 +37,12 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
 # نسخ ملف البيئة إذا لم يكن موجودًا
 RUN cp .env.example .env || true
 
-# تشغيل Laravel Migration و Cache
-RUN php artisan key:generate && php artisan config:cache && php artisan migrate --force
+# نسخ سكريبت الـ entrypoint لتشغيل أوامر Laravel عند بدء التشغيل
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # فتح المنفذ 80 للسماح بطلبات API
 EXPOSE 80
 
-# تشغيل Apache بعد تفعيل mod_rewrite
-CMD ["apache2-foreground"]
+# استخدام سكريبت entrypoint عند بدء التشغيل
+ENTRYPOINT ["/entrypoint.sh"]
